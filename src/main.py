@@ -13,6 +13,7 @@ from model import create_model, save_model
 from datasets.mpii import MPII
 from datasets.coco import COCO
 from datasets.fusion_3d import Fusion3D
+from datasets.threedpw import ThreeDPW
 from logger import Logger
 from train import train, val
 from train_3d import train_3d, val_3d
@@ -21,7 +22,8 @@ import scipy.io as sio
 dataset_factory = {
   'mpii': MPII,
   'coco': COCO,
-  'fusion_3d': Fusion3D
+  'fusion_3d': Fusion3D,
+  'threedpw': ThreeDPW
 }
 
 task_factory = {
@@ -35,7 +37,9 @@ def main(opt):
     print('Cudnn is disabled.')
 
   logger = Logger(opt)
-  opt.device = torch.device('cuda:{}'.format(opt.gpus[0]))
+  #opt.device = torch.device('cuda:{}'.format(opt.gpus[0]))
+  opt.device = torch.device('cpu')
+
 
   Dataset = dataset_factory[opt.dataset]
   train, val = task_factory[opt.task]
@@ -45,7 +49,9 @@ def main(opt):
   if len(opt.gpus) > 1:
     model = torch.nn.DataParallel(model, device_ids=opt.gpus).cuda(opt.device)
   else:
-    model = model.cuda(opt.device)
+    #model = model.cuda(opt.device)
+    model = model.to(opt.device)
+
 
   val_loader = torch.utils.data.DataLoader(
       Dataset(opt, 'val'), 

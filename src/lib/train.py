@@ -6,8 +6,13 @@ import cv2
 from progress.bar import Bar
 from utils.debugger import Debugger
 import time
+from datasets.threedpw import ThreeDPW
+
 
 def step(split, epoch, opt, data_loader, model, optimizer=None):
+  if opt.dataset == '3dpw':
+    data_loader = ThreeDPW(opt, split)
+
   if split == 'train':
     model.train()
   else:
@@ -33,8 +38,10 @@ def step(split, epoch, opt, data_loader, model, optimizer=None):
   for i, batch in enumerate(data_loader):
     data_time.update(time.time() - end)
     input, target, meta = batch['input'], batch['target'], batch['meta']
-    input_var = input.cuda(device=opt.device, non_blocking=True)
-    target_var = target.cuda(device=opt.device, non_blocking=True)
+    #input_var = input.cuda(device=opt.device, non_blocking=True)
+    input_var = input.to(opt.device, non_blocking=True)
+    #target_var = target.cuda(device=opt.device, non_blocking=True)
+    target_var = target.to(opt.device, non_blocking=True)
 
     output = model(input_var)
 
@@ -63,7 +70,9 @@ def step(split, epoch, opt, data_loader, model, optimizer=None):
       pred, conf = get_preds(output[-1]['hm'].detach().cpu().numpy(), True)
       preds.append(convert_eval_format(pred, conf, meta)[0])
     
-    Loss.update(loss.detach()[0], input.size(0))
+    #Loss.update(loss.detach()[0], input.size(0))
+    Loss.update(loss.detach().item(), input.size(0))
+
     Acc.update(accuracy(output[-1]['hm'].detach().cpu().numpy(), 
                         target_var.detach().cpu().numpy(), acc_idxs))
    
